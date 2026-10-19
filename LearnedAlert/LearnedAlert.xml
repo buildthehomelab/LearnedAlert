@@ -4,7 +4,114 @@
 	<Script file="locale.lua"/>
 	<Script file="core.lua"/>
 
-	<Button name="LearnedAlertButtonTemplate" parent="UIParent" toplevel="true" frameLevel="120" frameStrata="FULLSCREEN_DIALOG" hidden="true" virtual="true">
+	<!-- shared by both looks -->
+	<Button name="LearnedAlertButtonScriptsTemplate" virtual="true">
+		<Scripts>
+			<OnLoad function="LearnedAlertButtonTemplate_OnLoad"/>
+			<OnShow function="LearnedAlertButtonTemplate_OnShow"/>
+			<OnHide function="LearnedAlertButtonTemplate_OnHide"/>
+			<OnClick function="LearnedAlertButtonTemplate_OnClick"/>
+			<OnEnter function="LearnedAlertButtonTemplate_OnEnter"/>
+			<OnLeave function="GameTooltip_Hide"/>
+		</Scripts>
+	</Button>
+
+	<!-- without DragonUI: the stock achievement alert (FrameXML AlertFrames.xml, AchievementAlertFrameTemplate) -->
+	<Button name="LearnedAlertButtonTemplate" inherits="LearnedAlertButtonScriptsTemplate" parent="UIParent" toplevel="true" frameLevel="120" frameStrata="FULLSCREEN_DIALOG" hidden="true" virtual="true">
+		<Size x="300" y="88"/>
+		<Animations>
+			<AnimationGroup parentKey="animIn">
+				<Alpha change="-1" duration="0" order="1"/>
+				<Alpha change="1" duration="0.2" order="2"/>
+				<Scripts>
+					<OnFinished>
+						self:GetParent().waitAndAnimOut:Play()
+					</OnFinished>
+				</Scripts>
+			</AnimationGroup>
+			<AnimationGroup parentKey="waitAndAnimOut">
+				<Alpha startDelay="4.05" change="-1" duration="1.5" parentKey="animOut">
+					<Scripts>
+						<OnFinished>
+							self:GetParent():GetParent():Hide()
+						</OnFinished>
+					</Scripts>
+				</Alpha>
+			</AnimationGroup>
+		</Animations>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Background" file="Interface\AchievementFrame\UI-Achievement-Alert-Background">
+					<Anchors>
+						<Anchor point="TOPLEFT"/>
+						<Anchor point="BOTTOMRIGHT"/>
+					</Anchors>
+					<TexCoords left="0" right="0.605" top="0" bottom="0.703"/>
+				</Texture>
+				<FontString parentKey="Label" inherits="GameFontBlackTiny">
+					<Size x="200" y="12"/>
+					<Anchors>
+						<Anchor point="TOP" x="7" y="-23"/>
+					</Anchors>
+				</FontString>
+				<FontString parentKey="ItemName" inherits="GameFontHighlight" justifyV="MIDDLE">
+					<Size x="188" y="28"/>
+					<Anchors>
+						<Anchor point="BOTTOMLEFT" x="72" y="30"/>
+						<Anchor point="BOTTOMRIGHT" x="-40" y="30"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+			<!-- the stock alert's AchievementIconFrameTemplate: 50px icon in the gold icon frame -->
+			<Layer level="ARTWORK">
+				<Texture parentKey="Icon">
+					<Size x="50" y="50"/>
+					<Anchors>
+						<Anchor point="CENTER" relativePoint="TOPLEFT" x="36" y="-43"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture parentKey="IconBorder" file="Interface\AchievementFrame\UI-Achievement-IconFrame">
+					<Size x="72" y="72"/>
+					<Anchors>
+						<Anchor point="CENTER" relativePoint="TOPLEFT" x="35" y="-44"/>
+					</Anchors>
+					<TexCoords left="0" right="0.5625" top="0" bottom="0.5625"/>
+				</Texture>
+				<Texture parentKey="glow" file="Interface\AchievementFrame\UI-Achievement-Alert-Glow" alphaMode="ADD" alpha="0">
+					<Size x="400" y="171"/>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+					<TexCoords left="0" right="0.78125" top="0" bottom="0.66796875"/>
+					<Animations>
+						<AnimationGroup parentKey="animIn">
+							<Alpha change="1" duration="0.2" order="1"/>
+							<Alpha change="-1" duration="0.5" order="2"/>
+						</AnimationGroup>
+					</Animations>
+				</Texture>
+				<Texture parentKey="shine" file="Interface\AchievementFrame\UI-Achievement-Alert-Glow" alphaMode="ADD" alpha="0">
+					<Size x="67" y="72"/>
+					<Anchors>
+						<Anchor point="BOTTOMLEFT" x="0" y="8"/>
+					</Anchors>
+					<TexCoords left="0.78125" right="0.912109375" top="0" bottom="0.28125"/>
+					<Animations>
+						<AnimationGroup parentKey="animIn">
+							<Alpha change="1" duration="0.2" order="1"/>
+							<Translation offsetX="240" offsetY="0" duration="0.85" order="2"/>
+							<Alpha startDelay="0.35" change="-1" duration="0.5" order="2"/>
+						</AnimationGroup>
+					</Animations>
+				</Texture>
+			</Layer>
+		</Layers>
+	</Button>
+
+	<!-- with DragonUI: the retail loot toast -->
+	<Button name="LearnedAlertLootToastTemplate" inherits="LearnedAlertButtonScriptsTemplate" parent="UIParent" toplevel="true" frameLevel="120" frameStrata="FULLSCREEN_DIALOG" hidden="true" virtual="true">
 		<Size x="276" y="96"/>
 		<Animations>
 			<AnimationGroup parentKey="animIn">
@@ -113,14 +220,6 @@
 				</Texture>
 			</Layer>
 		</Layers>
-		<Scripts>
-			<OnLoad function="LearnedAlertButtonTemplate_OnLoad"/>
-			<OnShow function="LearnedAlertButtonTemplate_OnShow"/>
-			<OnHide function="LearnedAlertButtonTemplate_OnHide"/>
-			<OnClick function="LearnedAlertButtonTemplate_OnClick"/>
-			<OnEnter function="LearnedAlertButtonTemplate_OnEnter"/>
-			<OnLeave function="GameTooltip_Hide"/>
-		</Scripts>
 	</Button>
 
 	<Frame name="LearnedAlertFrame" parent="UIParent" hidden="false">
@@ -134,13 +233,4 @@
 			<OnUpdate function="LearnedAlertFrame_OnUpdate"/>
 		</Scripts>
 	</Frame>
-
-	<Button name="LearnedAlertButton1" inherits="LearnedAlertButtonTemplate" id="1"/>
-	<Button name="LearnedAlertButton2" inherits="LearnedAlertButtonTemplate" id="2"/>
-	<Button name="LearnedAlertButton3" inherits="LearnedAlertButtonTemplate" id="3"/>
-	<Button name="LearnedAlertButton4" inherits="LearnedAlertButtonTemplate" id="4"/>
-	<Button name="LearnedAlertButton5" inherits="LearnedAlertButtonTemplate" id="5"/>
-	<Button name="LearnedAlertButton6" inherits="LearnedAlertButtonTemplate" id="6"/>
-	<Button name="LearnedAlertButton7" inherits="LearnedAlertButtonTemplate" id="7"/>
-	<Button name="LearnedAlertButton8" inherits="LearnedAlertButtonTemplate" id="8"/>
 </Ui>
