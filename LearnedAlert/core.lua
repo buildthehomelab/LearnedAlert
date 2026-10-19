@@ -22,7 +22,10 @@ local point_y = config.point_y;
 local uptime = config.time;
 local spell_quality = config.spell_quality or 4;
 
-local LEARNEDALERT_NUM_BUTTONS = config.numbuttons;
+local LEARNEDALERT_NUM_BUTTONS = math.max(1, math.min(config.numbuttons or 4, 8));
+
+-- DragonUI (an OptionalDep, so it is loaded by now) gets the retail loot toast; everyone else the stock achievement alert
+local SKINNED = _G.DragonUI ~= nil;
 
 -- /* api's */
 local PlaySoundFile = PlaySoundFile;
@@ -35,10 +38,11 @@ local GameTooltip = GameTooltip;
 
 -- /* assets */
 local assets = [[Interface\AddOns\LearnedAlert\assets\]];
-local SOUND_SPELL_LEARNED = assets..(config.sound_file or "levelup.mp3");
+local SOUND_SPELL_LEARNED = SKINNED and assets..(config.sound_file or "levelup.mp3") or [[Sound\Interface\LevelUp.wav]];
 local FALLBACK_ICON = [[Interface\Icons\INV_Misc_Book_09]];
 
 -- /* consts */
+-- loot toast icon borders (DragonUI look); the stock look keeps the gold achievement icon frame
 local BORDER_BY_QUALITY = {
 	[2] = {0.34082, 0.397461, 0.53125, 0.644531},
 	[3] = {0.272461, 0.329102, 0.785156, 0.898438},
@@ -167,6 +171,11 @@ function LearnedAlertFrame_OnLoad(self)
 	self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
 
 	mixin(self, LearnedAlertFrameMixIn);
+
+	local template = SKINNED and "LearnedAlertLootToastTemplate" or "LearnedAlertButtonTemplate";
+	for i=1, LEARNEDALERT_NUM_BUTTONS do
+		CreateFrame("Button", "LearnedAlertButton"..i, UIParent, template);
+	end
 end
 
 function LearnedAlertFrame_OnEvent(self, event, ...)
@@ -225,7 +234,7 @@ function LearnedAlertButtonTemplate_OnShow(self)
 	if qualityColor then
 		self.ItemName:SetTextColor(qualityColor.r, qualityColor.g, qualityColor.b);
 	end
-	if BORDER_BY_QUALITY[spell_quality] then
+	if SKINNED and BORDER_BY_QUALITY[spell_quality] then
 		self.IconBorder:SetTexCoord(unpack(BORDER_BY_QUALITY[spell_quality]));
 	end
 

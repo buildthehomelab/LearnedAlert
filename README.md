@@ -12,6 +12,11 @@ It uses the "You have learned a new spell/ability/passive effect" system message
 - One sound per level-up batch, not one per toast
 - Skips the duplicate spell messages the game sends after a loading screen or a dual-spec swap
 
+## Looks
+
+- **Without DragonUI:** the toast looks like the stock achievement alert (its background, gold icon frame, glow and shine) and plays the stock level-up sound.
+- **With [DragonUI](https://github.com/NeticSoul/DragonUI):** the toast is a retail-style loot toast with a quality-colored icon border and its own sound.
+
 ## Upgrading from pretty_levelup
 
 This addon used to be called pretty_levelup. Delete the old `Interface/AddOns/pretty_levelup` folder
@@ -39,11 +44,11 @@ Edit `LearnedAlert/config.lua`:
 | --- | --- | --- |
 | `scale` | `1` | Toast size |
 | `sound` | `true` | Play a sound |
-| `sound_file` | `"levelup.mp3"` | Sound file in `LearnedAlert/assets/` (.mp3, .ogg, .wav) |
+| `sound_file` | `"levelup.mp3"` | Sound file in `LearnedAlert/assets/` (.mp3, .ogg, .wav), used with DragonUI; without it the stock level-up sound plays |
 | `numbuttons` | `4` | Toasts shown at once (max 8) |
 | `anims` | `true` | Glow and shine animations |
 | `point_x`, `point_y` | `0`, `120` | Toast position |
-| `spell_quality` | `4` | Border and name color (2 green, 3 blue, 4 purple, 5 orange, 7 gold) |
+| `spell_quality` | `4` | Name color, and the icon border color with DragonUI (2 green, 3 blue, 4 purple, 5 orange, 7 gold) |
 
 ## Troubleshooting
 
@@ -54,7 +59,7 @@ Edit `LearnedAlert/config.lua`:
 ## Credits
 
 - Based on [pretty_lootalert](https://github.com/s0h2x/pretty_lootalert) by s0h2x.
-- Sound: "Arcade UI 1" by floraphonic, from [Pixabay](https://pixabay.com/).
+- Sound (DragonUI look): "Arcade UI 1" by floraphonic, from [Pixabay](https://pixabay.com/).
 
 Author: [buildthehomelab](https://github.com/buildthehomelab)
 
