@@ -56,7 +56,8 @@ Edit `LearnedAlert/config.lua`:
 
 - **Two toasts for every spell:** the old `Interface/AddOns/pretty_levelup` folder is still installed. Delete it.
 - **No toast right after a loading screen or a spec swap:** that is deliberate. The game re-announces known spells then, so the addon ignores spell messages for about 5 seconds.
-- **No mount toast the first time you log in with this version:** that is deliberate. The addon remembers which mounts and pets your account has had a toast for (`LearnedAlertSeenCompanions` in the account's SavedVariables). The first time, it writes down the ones you already have without a toast; from then on every new one gets one.
+- **No mount toast the first time a character logs in with this version:** that is deliberate. The addon remembers which mounts and pets your account has had a toast for on each realm (`LearnedAlertSeenCompanions` in the account's SavedVariables). A character's first login writes down the ones it already has without a toast; from then on every new one gets one.
+- **The same mount toasted twice:** the list is saved when you log out or `/reload`, so after a client crash the toasts since the last save show again.
 - **Checking it works:** `/learned test` shows a sample toast for a spell you know.
 
 ## Credits

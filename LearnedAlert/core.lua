@@ -36,6 +36,8 @@ local GetSpellTexture = GetSpellTexture;
 local GetNumCompanions = GetNumCompanions;
 local GetCompanionInfo = GetCompanionInfo;
 local GetTime = GetTime;
+local GetRealmName = GetRealmName;
+local UnitName = UnitName;
 local GameTooltip = GameTooltip;
 
 -- /* assets */
@@ -70,8 +72,6 @@ local COMPANION_SCAN_DELAY = 2;	-- seconds after a loading screen, so the list i
 
 -- this character's companions at the last scan, [type][spellID] = true; nil until the first scan
 local companionsKnown;
--- spell name -> when its companion toast was queued, so a spell message for it adds no second toast
-local recentCompanions = {};
 
 -- /* tables */
 local LearnedAlertFrameMixIn = {};
@@ -133,29 +133,16 @@ function LearnedAlertFrameMixIn:AddSpell(learned)
 		link = bookLink or GetSpellLink(query);
 	end
 
-	if GetTime() - (recentCompanions[spellName] or -10) < 5 then
-		return;
-	end
-
 	if rank then
 		name = format("%s |cffffffff(%s)|r", name, rank);
 	end
 	self:AddAlert(name, link, icon or FALLBACK_ICON, spellName, rank);
 end
 
+-- the client announces these with ERR_LEARN_COMPANION_S, which the spell patterns don't match
 function LearnedAlertFrameMixIn:AddCompanion(kind, name, spellID, icon)
-	local spellName = GetSpellInfo(spellID);
-	if spellName then
-		recentCompanions[spellName] = GetTime();
-		for i = #self.alertQueue, 1, -1 do
-			local queued = self.alertQueue[i];
-			if not queued.companion and queued.spellName == spellName then
-				tRemove(self.alertQueue, i);
-			end
-		end
-	end
 	tInsert(self.alertQueue, {
-		name 		= name or spellName,
+		name 		= name or GetSpellInfo(spellID),
 		link 		= GetSpellLink(spellID),
 		texture 	= icon or FALLBACK_ICON,
 		label 		= COMPANION_LABELS[kind],
@@ -163,34 +150,39 @@ function LearnedAlertFrameMixIn:AddCompanion(kind, name, spellID, icon)
 	});
 end
 
--- A mount or pet this account never had a toast for gets one: learned just now, or added while you
--- were logged out (the realm's shop sells them for the whole account, a gift). The account's list
--- is LearnedAlertSeenCompanions; the first time it is empty it is filled without toasts. One this
--- character learns while playing gets a toast even if another character had it already.
+-- A mount or pet this account never had a toast for on this realm gets one: learned just now, or
+-- added while you were logged out (the realm's shop sells them for the whole account, a gift). The
+-- list is LearnedAlertSeenCompanions[realm], kept per realm because SavedVariables are shared by
+-- every realm. A character's first scan adds what it has without toasts, so the first character to
+-- log in can't leave the list empty for one that has more. One this character learns while
+-- playing gets a toast even if another character had it already.
 function LearnedAlertFrameMixIn:ScanCompanions()
-	local seen = LearnedAlertSeenCompanions or {};
-	LearnedAlertSeenCompanions = seen;
+	local saved = LearnedAlertSeenCompanions or {};
+	LearnedAlertSeenCompanions = saved;
+	local realm = GetRealmName();
+	local seen = saved[realm] or {characters = {}};
+	saved[realm] = seen;
+	local character = UnitName("player");
+	local quiet = not seen.characters[character];
+	seen.characters[character] = true;
+
 	local previous = companionsKnown;
 	companionsKnown = {};
 
 	for _, kind in ipairs(COMPANION_TYPES) do
-		local seenKind = seen[kind];
+		local seenKind = seen[kind] or {};
+		seen[kind] = seenKind;
 		local known = previous and previous[kind];
 		local current = {};
 		for i = 1, GetNumCompanions(kind) do
 			local _, creatureName, spellID, icon = GetCompanionInfo(kind, i);
 			if spellID then
 				current[spellID] = true;
-				if seenKind and (not seenKind[spellID] or (known and not known[spellID])) then
+				if not quiet and (not seenKind[spellID] or (known and not known[spellID])) then
 					self:AddCompanion(kind, creatureName, spellID, icon);
 				end
+				seenKind[spellID] = true;
 			end
-		end
-
-		seenKind = seenKind or {};
-		seen[kind] = seenKind;
-		for spellID in pairs(current) do
-			seenKind[spellID] = true;
 		end
 		companionsKnown[kind] = current;
 	end
@@ -363,11 +355,16 @@ function LearnedAlertButtonTemplate_OnHide(self)
 	LearnedAlertFrameMixIn:AdjustAnchors();
 end
 
--- DragonUI's Pets & Mounts window when it has one, else the stock companion tabs of the character frame
+-- DragonUI's Pets & Mounts window when it has one, else the stock companion tabs of the character
+-- frame; opened on that tab, never toggled, so a click can't close a window that's already open
 local function OpenCompanions(kind)
+	local collections = SKINNED and _G.DragonUI.Collections;
 	local microButton = _G.CollectionsMicroButton;
-	if SKINNED and _G.DragonUI.ToggleCollections and microButton and not microButton.dragonUISuppressed then
-		_G.DragonUI.ToggleCollections(kind);
+	if collections and collections.Open and microButton and not microButton.dragonUISuppressed then
+		collections.Open(kind);
+		if collections.SelectKind then
+			collections.SelectKind(kind);
+		end
 		return;
 	end
 	if not PetPaperDollFrame:IsVisible() then
