@@ -1,8 +1,9 @@
 ## Interface: 30300
 ## Title: LearnedAlert
-## Notes: |cffcaf7faShows a loot-style toast for every spell you learn (based on pretty_lootalert by s0h2x)|r
-## Version: 2.1
+## Notes: |cffcaf7faShows a loot-style toast for every spell, mount and pet you learn (based on pretty_lootalert by s0h2x)|r
+## Version: 2.2
 ## Author: buildthehomelab
 ## OptionalDeps: DragonUI
+## SavedVariables: LearnedAlertSeenCompanions
 
 LearnedAlert.xml

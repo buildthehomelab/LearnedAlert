@@ -1,6 +1,6 @@
 # LearnedAlert
 
-A World of Warcraft **3.3.5a (Wrath of the Lich King)** addon that shows a loot-style toast for every spell, ability, or passive you learn. It's built for servers that teach spells automatically on level up.
+A World of Warcraft **3.3.5a (Wrath of the Lich King)** addon that shows a loot-style toast for every spell, ability, or passive you learn, and for every new mount and pet. It's built for servers that teach spells automatically on level up.
 
 It uses the "You have learned a new spell/ability/passive effect" system messages, so it works whether the server sends spell links or plain text like `Frost Nova (Rank 1)`.
 
@@ -11,6 +11,7 @@ It uses the "You have learned a new spell/ability/passive effect" system message
 - Up to 4 toasts on screen at once (configurable); extras queue
 - One sound per level-up batch, not one per toast
 - Skips the duplicate spell messages the game sends after a loading screen or a dual-spec swap
+- A **New Mount** or **New Pet** toast for every mount and pet you get, also for ones added while you were logged out (bought in a shop for the whole account, a gift): they show a couple of seconds after you log in. Click the toast to open your mounts or pets (DragonUI's Pets & Mounts window when it has one)
 
 ## Looks
 
@@ -35,6 +36,7 @@ when you install LearnedAlert, or both will show a toast for every spell.
 ## Usage
 
 - `/learned test`: show a sample toast (`/levelup test` still works too)
+- `/learned test mount`, `/learned test pet`: show the toast for your first mount or pet
 
 ## Configuration
 
@@ -54,6 +56,7 @@ Edit `LearnedAlert/config.lua`:
 
 - **Two toasts for every spell:** the old `Interface/AddOns/pretty_levelup` folder is still installed. Delete it.
 - **No toast right after a loading screen or a spec swap:** that is deliberate. The game re-announces known spells then, so the addon ignores spell messages for about 5 seconds.
+- **No mount toast the first time you log in with this version:** that is deliberate. The addon remembers which mounts and pets your account has had a toast for (`LearnedAlertSeenCompanions` in the account's SavedVariables). The first time, it writes down the ones you already have without a toast; from then on every new one gets one.
 - **Checking it works:** `/learned test` shows a sample toast for a spell you know.
 
 ## Credits

@@ -33,6 +33,8 @@ local GetSpellInfo = GetSpellInfo;
 local GetSpellLink = GetSpellLink;
 local GetSpellName = GetSpellName;
 local GetSpellTexture = GetSpellTexture;
+local GetNumCompanions = GetNumCompanions;
+local GetCompanionInfo = GetCompanionInfo;
 local GetTime = GetTime;
 local GameTooltip = GameTooltip;
 
@@ -59,6 +61,17 @@ for _, str in ipairs({ERR_LEARN_SPELL_S, ERR_LEARN_ABILITY_S, ERR_LEARN_PASSIVE_
 		tInsert(PATTERNS_LEARN_SPELL, "^"..str:gsub("([%.%(%)%-%+%*%?%[%]])", "%%%1"):gsub("%%s", "(.+)"));
 	end
 end
+
+-- /* companions */
+-- mounts and pets (the client's companion list), which get a toast of their own
+local COMPANION_TYPES = {"MOUNT", "CRITTER"};
+local COMPANION_LABELS = {MOUNT = LEARNEDALERT_NEW_MOUNT_LABEL, CRITTER = LEARNEDALERT_NEW_PET_LABEL};
+local COMPANION_SCAN_DELAY = 2;	-- seconds after a loading screen, so the list is complete
+
+-- this character's companions at the last scan, [type][spellID] = true; nil until the first scan
+local companionsKnown;
+-- spell name -> when its companion toast was queued, so a spell message for it adds no second toast
+local recentCompanions = {};
 
 -- /* tables */
 local LearnedAlertFrameMixIn = {};
@@ -120,10 +133,67 @@ function LearnedAlertFrameMixIn:AddSpell(learned)
 		link = bookLink or GetSpellLink(query);
 	end
 
+	if GetTime() - (recentCompanions[spellName] or -10) < 5 then
+		return;
+	end
+
 	if rank then
 		name = format("%s |cffffffff(%s)|r", name, rank);
 	end
 	self:AddAlert(name, link, icon or FALLBACK_ICON, spellName, rank);
+end
+
+function LearnedAlertFrameMixIn:AddCompanion(kind, name, spellID, icon)
+	local spellName = GetSpellInfo(spellID);
+	if spellName then
+		recentCompanions[spellName] = GetTime();
+		for i = #self.alertQueue, 1, -1 do
+			local queued = self.alertQueue[i];
+			if not queued.companion and queued.spellName == spellName then
+				tRemove(self.alertQueue, i);
+			end
+		end
+	end
+	tInsert(self.alertQueue, {
+		name 		= name or spellName,
+		link 		= GetSpellLink(spellID),
+		texture 	= icon or FALLBACK_ICON,
+		label 		= COMPANION_LABELS[kind],
+		companion 	= kind,
+	});
+end
+
+-- A mount or pet this account never had a toast for gets one: learned just now, or added while you
+-- were logged out (the realm's shop sells them for the whole account, a gift). The account's list
+-- is LearnedAlertSeenCompanions; the first time it is empty it is filled without toasts. One this
+-- character learns while playing gets a toast even if another character had it already.
+function LearnedAlertFrameMixIn:ScanCompanions()
+	local seen = LearnedAlertSeenCompanions or {};
+	LearnedAlertSeenCompanions = seen;
+	local previous = companionsKnown;
+	companionsKnown = {};
+
+	for _, kind in ipairs(COMPANION_TYPES) do
+		local seenKind = seen[kind];
+		local known = previous and previous[kind];
+		local current = {};
+		for i = 1, GetNumCompanions(kind) do
+			local _, creatureName, spellID, icon = GetCompanionInfo(kind, i);
+			if spellID then
+				current[spellID] = true;
+				if seenKind and (not seenKind[spellID] or (known and not known[spellID])) then
+					self:AddCompanion(kind, creatureName, spellID, icon);
+				end
+			end
+		end
+
+		seenKind = seenKind or {};
+		seen[kind] = seenKind;
+		for spellID in pairs(current) do
+			seenKind[spellID] = true;
+		end
+		companionsKnown[kind] = current;
+	end
 end
 
 function LearnedAlertFrameMixIn:CreateAlert()
@@ -169,6 +239,7 @@ function LearnedAlertFrame_OnLoad(self)
 	self:RegisterEvent("CHAT_MSG_SYSTEM");
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
+	self:RegisterEvent("COMPANION_LEARNED");
 
 	mixin(self, LearnedAlertFrameMixIn);
 
@@ -182,6 +253,17 @@ function LearnedAlertFrame_OnEvent(self, event, ...)
 	-- dual spec swaps and loading screens re-announce known spells, so ignore those for a moment
 	if event == "PLAYER_ENTERING_WORLD" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		self.spellMuteUntil = GetTime() + 5;
+		if event == "PLAYER_ENTERING_WORLD" then
+			self.companionScanAt = GetTime() + COMPANION_SCAN_DELAY;
+		end
+		return;
+	end
+
+	-- before the first scan the one after the loading screen finds it
+	if event == "COMPANION_LEARNED" then
+		if companionsKnown then
+			LearnedAlertFrameMixIn:ScanCompanions();
+		end
 		return;
 	end
 
@@ -198,6 +280,11 @@ function LearnedAlertFrame_OnEvent(self, event, ...)
 end
 
 function LearnedAlertFrame_OnUpdate(self, elapsed)
+	if self.companionScanAt and GetTime() >= self.companionScanAt then
+		self.companionScanAt = nil;
+		LearnedAlertFrameMixIn:ScanCompanions();
+	end
+
 	self.updateTime = self.updateTime - elapsed;
 	if self.updateTime <= 0 then
 		local alert = LearnedAlertFrameMixIn:CreateAlert();
@@ -229,7 +316,7 @@ function LearnedAlertButtonTemplate_OnShow(self)
 
 	self.Icon:SetTexture(data.texture);
 	self.ItemName:SetText(data.name);
-	self.Label:SetText(YOU_LEARNED_LABEL);
+	self.Label:SetText(data.label or YOU_LEARNED_LABEL);
 
 	if qualityColor then
 		self.ItemName:SetTextColor(qualityColor.r, qualityColor.g, qualityColor.b);
@@ -250,6 +337,7 @@ function LearnedAlertButtonTemplate_OnShow(self)
 	end
 
 	self.hyperLink = data.link;
+	self.companionType = data.companion;
 end
 
 local function GetButtonLink(self)
@@ -275,9 +363,24 @@ function LearnedAlertButtonTemplate_OnHide(self)
 	LearnedAlertFrameMixIn:AdjustAnchors();
 end
 
+-- DragonUI's Pets & Mounts window when it has one, else the stock companion tabs of the character frame
+local function OpenCompanions(kind)
+	local microButton = _G.CollectionsMicroButton;
+	if SKINNED and _G.DragonUI.ToggleCollections and microButton and not microButton.dragonUISuppressed then
+		_G.DragonUI.ToggleCollections(kind);
+		return;
+	end
+	if not PetPaperDollFrame:IsVisible() then
+		ToggleCharacter("PetPaperDollFrame");
+	end
+	PetPaperDollFrame_SetTab(kind == "MOUNT" and 3 or 2);
+end
+
 function LearnedAlertButtonTemplate_OnClick(self, button)
 	if button == "RightButton" then
 		self:Hide();
+	elseif self.companionType and not IsModifierKeyDown() then
+		OpenCompanions(self.companionType);
 	elseif GetButtonLink(self) then
 		HandleModifiedItemClick(self.hyperLink);
 	end
@@ -290,7 +393,8 @@ function LearnedAlertButtonTemplate_OnEnter(self)
 	GameTooltip:Show();
 end
 
--- /learned test: fakes the chat message for a spell you know, so the toast can be checked anytime
+-- /learned test: fakes the chat message for a spell you know, so the toast can be checked anytime;
+-- /learned test mount (or pet): the toast for your first mount (or pet)
 SLASH_LEARNEDALERT1 = "/learned";
 SLASH_LEARNEDALERT2 = "/levelup";  -- the old pretty_levelup command
 SlashCmdList["LEARNEDALERT"] = function(msg)
@@ -298,7 +402,15 @@ SlashCmdList["LEARNEDALERT"] = function(msg)
 		local name, rank = GetSpellInfo(6603); -- Attack, every class has it
 		local sample = (rank and rank ~= "") and format("%s (%s)", name, rank) or name;
 		LearnedAlertFrameMixIn:AddSpell(sample);
+	elseif msg == "test mount" or msg == "test pet" then
+		local kind = (msg == "test mount") and "MOUNT" or "CRITTER";
+		local _, creatureName, spellID, icon = GetCompanionInfo(kind, 1);
+		if spellID then
+			LearnedAlertFrameMixIn:AddCompanion(kind, creatureName, spellID, icon);
+		else
+			print(format("LearnedAlert: you have no %s to show", kind == "MOUNT" and "mount" or "pet"));
+		end
 	else
-		print("LearnedAlert: /learned test - show a sample toast");
+		print("LearnedAlert: /learned test - show a sample toast; /learned test mount, /learned test pet - the mount and pet toasts");
 	end
 end
