@@ -17,6 +17,30 @@ private.locales = {
 		zhCN = "你学会了：",
 		zhTW = "你學會了："
 	},
+	["LEARNEDALERT_NEW_MOUNT_LABEL"] = {
+		ruRU = "Новый транспорт:",
+		enGB = "New Mount:",
+		esMX = "Nueva montura:",
+		deDE = "Neues Reittier:",
+		frFR = "Nouvelle monture :",
+		itIT = "Nuova cavalcatura:",
+		koKR = "새로운 탈것:",
+		ptBR = "Nova montaria:",
+		zhCN = "新坐骑：",
+		zhTW = "新坐騎："
+	},
+	["LEARNEDALERT_NEW_PET_LABEL"] = {
+		ruRU = "Новый спутник:",
+		enGB = "New Pet:",
+		esMX = "Nueva mascota:",
+		deDE = "Neues Haustier:",
+		frFR = "Nouvelle mascotte :",
+		itIT = "Nuova mascotte:",
+		koKR = "새로운 애완동물:",
+		ptBR = "Novo mascote:",
+		zhCN = "新宠物：",
+		zhTW = "新寵物："
+	},
 };
 
 setmetatable(private.locales,{
