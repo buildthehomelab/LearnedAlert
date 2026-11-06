@@ -147,6 +147,7 @@ function LearnedAlertFrameMixIn:AddCompanion(kind, name, spellID, icon)
 		texture 	= icon or FALLBACK_ICON,
 		label 		= COMPANION_LABELS[kind],
 		companion 	= kind,
+		spellID 	= spellID,
 	});
 end
 
@@ -330,6 +331,7 @@ function LearnedAlertButtonTemplate_OnShow(self)
 
 	self.hyperLink = data.link;
 	self.companionType = data.companion;
+	self.companionSpell = data.spellID;
 end
 
 local function GetButtonLink(self)
@@ -355,9 +357,15 @@ function LearnedAlertButtonTemplate_OnHide(self)
 	LearnedAlertFrameMixIn:AdjustAnchors();
 end
 
--- DragonUI's Pets & Mounts window when it has one, else the stock companion tabs of the character
--- frame; opened on that tab, never toggled, so a click can't close a window that's already open
-local function OpenCompanions(kind)
+-- The realm's Journal (mod-forever-journal) opened on the new one, as DragonUI's micro button opens
+-- the Journal too; else DragonUI's Pets & Mounts window when it has one, else the stock companion
+-- tabs of the character frame. Opened on that tab, never toggled, so a click can't close a window
+-- that's already open.
+local function OpenCompanions(kind, spellID)
+	local journal = _G.Journal;
+	if journal and journal.ShowCollection and journal.ShowCollection(kind, spellID) then
+		return;
+	end
 	local collections = SKINNED and _G.DragonUI.Collections;
 	local microButton = _G.CollectionsMicroButton;
 	if collections and collections.Open and microButton and not microButton.dragonUISuppressed then
@@ -377,7 +385,7 @@ function LearnedAlertButtonTemplate_OnClick(self, button)
 	if button == "RightButton" then
 		self:Hide();
 	elseif self.companionType and not IsModifierKeyDown() then
-		OpenCompanions(self.companionType);
+		OpenCompanions(self.companionType, self.companionSpell);
 	elseif GetButtonLink(self) then
 		HandleModifiedItemClick(self.hyperLink);
 	end

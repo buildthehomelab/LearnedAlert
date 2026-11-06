@@ -11,7 +11,7 @@ It uses the "You have learned a new spell/ability/passive effect" system message
 - Up to 4 toasts on screen at once (configurable); extras queue
 - One sound per level-up batch, not one per toast
 - Skips the duplicate spell messages the game sends after a loading screen or a dual-spec swap
-- A **New Mount** or **New Pet** toast for every mount and pet you get, also for ones added while you were logged out (bought in a shop for the whole account, a gift): they show a couple of seconds after you log in. Click the toast to open your mounts or pets (DragonUI's Pets & Mounts window when it has one)
+- A **New Mount** or **New Pet** toast for every mount and pet you get, also for ones added while you were logged out (bought in a shop for the whole account, a gift): they show a couple of seconds after you log in. Click the toast to open your mounts or pets on the new one (the realm's Journal, else DragonUI's Pets & Mounts window when it has one)
 
 ## Looks
 
